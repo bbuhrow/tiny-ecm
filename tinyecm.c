@@ -56,7 +56,7 @@ either expressed or implied, of the FreeBSD Project.
 #include "stdint.h"
 #include <math.h>
 
-#define D 60
+#define D 120
 
 #ifndef BITS
 #define BITS 64
@@ -538,42 +538,6 @@ static const uint32_t map[61] = {
 	0, 0, 0, 16, 0, 0, 0, 0, 0, 17,
 	18 };
 
-static const uint32_t map210[108] = {
-	0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-	3, 0, 4, 0, 0, 0, 5, 0, 6, 0,
-	0, 0, 7, 0, 0, 0, 0, 0, 8, 0,
-	9, 0, 0, 0, 0, 0, 10, 0, 0, 0,
-	11, 0, 12, 0, 0, 0, 13, 0, 0, 0,
-	0, 0, 14, 0, 0, 0, 0, 0, 15, 0,
-	16, 0, 0, 0, 0, 0, 17, 0, 0, 0,
-	18, 0, 19, 0, 0, 0, 0, 0, 20, 0,
-	0, 0, 21, 0, 0, 0, 0, 0, 22, 0,
-	0, 0, 0, 0, 0, 0, 23, 0, 0, 0,
-	24, 0, 25, 0, 26, 0, 0};
-
-static const uint32_t map420[215] = {
-0,1,2,0, 0, 0, 0, 0, 0, 0, 0,
-3, 0, 4, 0, 0, 0, 5, 0, 6, 0,
-0, 0, 7, 0, 0, 0, 0, 0, 8, 0,
-9, 0, 0, 0, 0, 0, 10, 0, 0, 0,
-11, 0, 12, 0, 0, 0, 13, 0, 0, 0,
-0, 0, 14, 0, 0, 0, 0, 0, 15, 0,
-16, 0, 0, 0, 0, 0, 17, 0, 0, 0,
-18, 0, 19, 0, 0, 0, 0, 0, 20, 0,
-0, 0, 21, 0, 0, 0, 0, 0, 22, 0,
-0, 0, 0, 0, 0, 0, 23, 0, 0, 0,
-24, 0, 25, 0, 0, 0, 26, 0, 27, 0,
-0, 0, 28, 0, 0, 0, 0, 0, 0, 0,
-29, 0, 0, 0, 0, 0, 30, 0, 0, 0,
-31, 0, 0, 0, 0, 0, 32, 0, 33, 0,
-0, 0, 34, 0, 0, 0, 0, 0, 35, 0,
-36, 0, 0, 0, 0, 0, 37, 0, 0, 0,
-0, 0, 38, 0, 0, 0, 39, 0, 40, 0,
-0, 0, 41, 0, 0, 0, 0, 0, 42, 0,
-43, 0, 0, 0, 0, 0, 44, 0, 0, 0,
-45, 0, 46, 0, 0, 0, 47, 0, 48, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 49, 50 };
-
 #define NUMP 801
 static const uint32_t primes[NUMP] = {
 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31,
@@ -657,9 +621,6 @@ static const uint32_t primes[NUMP] = {
 5981, 5987, 6007, 6011, 6029, 6037, 6043, 6047, 6053, 6067,
 6073, 6079, 6089, 6091, 6101, 6113, 6121, 6131, 6133, 6143,
 };
-
-static uint8_t marks[D];
-static uint8_t nmarks[D];
 
 // local functions
 void uadd(uint64_t rho, uecm_work *work, uecm_pt *P1, uecm_pt *p2,
@@ -884,23 +845,53 @@ void udup(uint64_t rho, uecm_work *work,
 }
 
 //#define PRACOPT
+//#define TRACEPRAC
+#ifdef TRACEPRAC
+#include "gmp.h"
+#endif
 
 void uprac70(uint64_t rho, uecm_work *work, uecm_pt *P)
 {
 	uint64_t s1, s2, d1, d2;
-	uint64_t swp;
+	uint64_t swp1, swp2;
 	int i;
-	static const uint8_t steps[116] = { 
-		0,6,0,6,0,6,0,4,6,0,4,6,0,4,4,6,
-		0,4,4,6,0,5,4,6,0,3,3,4,6,0,3,5,
-		4,6,0,3,4,3,4,6,0,5,5,4,6,0,5,3,
-		3,4,6,0,3,3,4,3,4,6,0,5,3,3,3,3,
-		3,3,3,3,4,3,3,4,6,0,5,4,3,3,4,6,
-		0,3,4,3,5,4,6,0,5,3,3,3,4,6,0,5,
-		4,3,5,4,6,0,5,5,3,3,4,6,0,4,3,3,
-		3,5,4,6};
+	//static const uint8_t steps[116] = { 
+	//	0,6,0,6,0,6,0,4,6,0,4,6,0,4,4,6,
+	//	0,4,4,6,0,5,4,6,0,3,3,4,6,0,3,5,
+	//	4,6,0,3,4,3,4,6,0,5,5,4,6,0,5,3,
+	//	3,4,6,0,3,3,4,3,4,6,0,5,3,3,3,3,
+	//	3,3,3,3,4,3,3,4,6,0,5,4,3,3,4,6,
+	//	0,3,4,3,5,4,6,0,5,3,3,3,4,6,0,5,
+	//	4,3,5,4,6,0,5,5,3,3,4,6,0,4,3,3,
+	//	3,5,4,6};
 
-	for (i = 0; i < 116; i++)
+    // case 6 is always followed by 0 except for the very last one.
+    static const uint8_t steps[95] = {
+        0,6,6,6,4,6,4,6,4,4,6,4,4,6,5,4,
+        6,3,3,4,6,3,5,4,6,3,4,3,4,6,5,5,
+        4,6,5,3,3,4,6,3,3,4,3,4,6,5,3,3,
+        3,3,3,3,3,3,4,3,3,4,6,5,4,3,3,4,
+        6,3,4,3,5,4,6,5,3,3,3,4,6,5,4,3,
+        5,4,6,5,5,3,3,4,6,4,3,3,3,5,4};
+
+#ifdef TRACEPRAC
+    mpz_t A, B, C, T, S, p;
+    mpz_init(A);
+    mpz_init(B);
+    mpz_init(C);
+    mpz_init(T);
+    mpz_init(S);
+    mpz_init(p);
+
+    mpz_set_ui(A, 1);
+    mpz_set_ui(B, 1);
+    mpz_set_ui(C, 1);
+    mpz_set_ui(T, 1);
+    mpz_set_ui(S, 1);
+    mpz_set_ui(p, 1);
+#endif
+
+	for (i = 0; i < 95; i++)
 	{
 		if (steps[i] == 0)
 		{
@@ -910,35 +901,73 @@ void uprac70(uint64_t rho, uecm_work *work, uecm_pt *P)
 			d1 = submod(work->pt1.X, work->pt1.Z, work->n);
 			s1 = addmod(work->pt1.X, work->pt1.Z, work->n);
 			udup(rho, work, s1, d1, &work->pt1);
+
+#ifdef TRACEPRAC
+            gmp_printf("A = B = C = P = %Zd\n", p);
+            mpz_add(A, A, A);
+            gmp_printf("A = 2 * A (%Zd)\n", A);
+#endif
 		}
 		else if (steps[i] == 3)
 		{
 			// integrate step 4 followed by swap(1,2)
 			uadd(rho, work, &work->pt2, &work->pt1, &work->pt3, &work->pt4);		// T = B + A (C)
+            
+#ifdef TRACEPRAC
+            mpz_add(T, B, A);
+            gmp_printf("T = B + A (%Zd)\n", T);
 
-			swp = work->pt1.X;
+            mpz_set(S, A);
+            mpz_set(A, T);
+            mpz_set(T, C);
+            mpz_set(C, B);
+            mpz_set(B, S);
+
+            gmp_printf("S = A (%Zd)\n", S);
+            gmp_printf("A = T (%Zd)\n", A);
+            gmp_printf("T = C (%Zd)\n", T);
+            gmp_printf("C = B (%Zd)\n", C);
+            gmp_printf("B = S (%Zd)\n", B);
+#endif
+
+			swp1 = work->pt1.X;
+            swp2 = work->pt1.Z;
 			work->pt1.X = work->pt4.X;
+            work->pt1.Z = work->pt4.Z;
 			work->pt4.X = work->pt3.X;
+            work->pt4.Z = work->pt3.Z;
 			work->pt3.X = work->pt2.X;
-			work->pt2.X = swp;
-			swp = work->pt1.Z;
-			work->pt1.Z = work->pt4.Z;
-			work->pt4.Z = work->pt3.Z;
-			work->pt3.Z = work->pt2.Z;
-			work->pt2.Z = swp;
+            work->pt3.Z = work->pt2.Z;
+			work->pt2.X = swp1;
+            work->pt2.Z = swp2;
 		}
 		else if (steps[i] == 4)
 		{
 			uadd(rho, work, &work->pt2, &work->pt1, &work->pt3, &work->pt4);		// T = B + A (C)
 
-			swp = work->pt2.X;
+#ifdef TRACEPRAC
+            mpz_add(T, B, A);
+            gmp_printf("T = B + A (%Zd)\n", T);
+
+            mpz_set(S, B);
+            mpz_set(B, T);
+            mpz_set(T, C);
+            mpz_set(C, S);
+
+            gmp_printf("S = B (%Zd)\n", S);
+            gmp_printf("B = T (%Zd)\n", B);
+            gmp_printf("T = C (%Zd)\n", T);
+            gmp_printf("C = S (%Zd)\n", S);
+#endif
+
+			swp1 = work->pt2.X;
+            swp2 = work->pt2.Z;
 			work->pt2.X = work->pt4.X;
+            work->pt2.Z = work->pt4.Z;
 			work->pt4.X = work->pt3.X;
-			work->pt3.X = swp;
-			swp = work->pt2.Z;
-			work->pt2.Z = work->pt4.Z;
-			work->pt4.Z = work->pt3.Z;
-			work->pt3.Z = swp;
+            work->pt4.Z = work->pt3.Z;
+			work->pt3.X = swp1;
+			work->pt3.Z = swp2;
 		}
 		else if (steps[i] == 5)
 		{
@@ -947,13 +976,45 @@ void uprac70(uint64_t rho, uecm_work *work, uecm_pt *P)
 
 			uadd(rho, work, &work->pt2, &work->pt1, &work->pt3, &work->pt2);		// B = B + A (C)
 			udup(rho, work, s2, d2, &work->pt1);		// A = 2A
+
+#ifdef TRACEPRAC
+            mpz_add(B, B, A);
+            mpz_add(A, A, A);
+            gmp_printf("B = B + A (%Zd)\n", B);
+            gmp_printf("A = 2 * A (%Zd)\n", A);
+#endif
 		}
 		else if (steps[i] == 6)
 		{
 			uadd(rho, work, &work->pt1, &work->pt2, &work->pt3, P);		// A = A + B (C)
-		}
 
+            work->pt1.X = work->pt2.X = work->pt3.X = P->X;
+            work->pt1.Z = work->pt2.Z = work->pt3.Z = P->Z;
+
+            d1 = submod(work->pt1.X, work->pt1.Z, work->n);
+            s1 = addmod(work->pt1.X, work->pt1.Z, work->n);
+            udup(rho, work, s1, d1, &work->pt1);
+
+#ifdef TRACEPRAC
+            mpz_add(p, A, B);
+            mpz_set(A, p);
+            mpz_set(B, p);
+            mpz_set(C, p);
+            gmp_printf("p = A + B (%Zd)\n", p);
+            gmp_printf("A = B = C = P = %Zd\n", p);
+            mpz_add(A, A, A);
+            gmp_printf("A = 2 * A (%Zd)\n", A);
+#endif
+		}
 	}
+
+    uadd(rho, work, &work->pt1, &work->pt2, &work->pt3, P);		// A = A + B (C)
+    
+#ifdef TRACEPRAC
+    mpz_add(p, A, B);
+    gmp_printf("p = A + B (%Zd)\n", p);
+    exit(1);
+#endif
 
 	return;
 
@@ -1496,6 +1557,7 @@ int tinyecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2, uint32_t curves)
 
 	if (0)
 	{
+        // printing out coprime residues
 		j = 3;
 		for (i = 3; i <= 105; i++)
 		{
@@ -1520,26 +1582,41 @@ int tinyecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2, uint32_t curves)
 
 	if (0)
 	{
+        // a mini pair generator for use in uecm_stage2_D* or uecm_stage2_D*_inv
+        // where * can be 60 or 120.
 		uint32_t A = 150;
 		uint32_t d = 120;
 		uint32_t b1 = B1;
 		uint32_t p;
 		int k = 0;
+        int b;
 		int m = 0;
+
+        // printing out coprime residues
+        printf("b-vals: ");
+        b = 0;
+        for (i = 1; i < (d/2 + (d%2)); i++)
+        {
+            if (spGCD(i, d) == 1)
+            {
+                printf("%d, ", i);
+                b++;
+            }
+        }
+        printf("\n");
+        printf("need %d b-vals: minimum %u muls\n", b, b * 6 + b);
 
 		i = 0;
 		while (primes[i] < b1)
 			i++;
 
-		printf("starting A = %u, prime = %u\n", A, primes[i]);
+        k = 0;
+		printf("starting A = %u, d = %u, prime = %u\n", A, d, primes[i]);
 		while (A < B2)
 		{
 			int found;
 
 			//printf("A = %u\n", A);
-			printf("0,");
-			k++;
-			m++;
 			while (primes[i] < A)
 			{
 				uint32_t s1 = A - primes[i];
@@ -1593,13 +1670,25 @@ int tinyecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2, uint32_t curves)
 				i++;
 			}
 			A += d;
+            if (A < B2)
+            {
+                printf("0,");
+                k++;
+                m++;
+            }
 		}
 		printf("\nlength %d, %d adds\n", k-m, m);
+        printf("L=1: %u accum muls + %u setup muls = %u total muls\n", 
+            (k - m) * 2 + m * 6 + m, 
+            b * 6 + b, 
+            (k - m) * 2 + m * 6 + m + b * 6 + b);
 		exit(1);
 	}
 
     if (0)
     {
+        // for printing out pre-built constants of specific curves
+        // that have been identified as more likely to factor general inputs.
         //for (curve = 0; curve < 32; curve++)
         //{
         //    ubuild(&P, rho, &work, goodsigma[curve]);
@@ -1661,9 +1750,13 @@ int tinyecm(uint64_t n, uint64_t *f, uint32_t B1, uint32_t B2, uint32_t curves)
 		if (B2 > B1)
 		{
 			//uecm_stage2_D120_inv(&P, rho, &work);
-            //uecm_stage2_D120(&P, rho, &work);
+            uecm_stage2_D120(&P, rho, &work);
             //uecm_stage2_D60(&P, rho, &work);
-            uecm_stage2_w60u1(&P, rho, &work);
+
+            //if (B1 < 60)
+            //    uecm_stage2_w30u2(&P, rho, &work);
+            //else
+            //    uecm_stage2_w60u1(&P, rho, &work);
 
 			result = ucheck_factor(work.stg2acc, n, &tmp1);
 
@@ -1941,8 +2034,25 @@ static uint8_t b1_165[463] = { 13,7,1,11,19,0,29,17,13,11,7,1,23,0,29,23,19,17,7
 static const int numb1_205 = 566;
 static uint8_t b1_205[566] = { 29,17,13,11,7,1,23,0,29,23,19,17,7,11,13,0,29,23,13,11,7,1,19,0,23,19,11,1,13,29,0,23,19,17,13,1,7,11,29,0,19,17,1,7,23,29,0,29,23,13,7,1,17,19,0,29,19,17,13,7,1,23,0,29,19,11,1,7,13,23,0,29,23,19,11,7,17,0,29,19,17,13,11,1,23,0,23,19,17,13,7,11,29,0,23,19,13,7,11,17,0,29,23,11,7,1,13,19,0,29,19,17,11,7,13,23,0,23,17,11,13,0,29,19,13,7,1,17,23,0,29,23,11,1,17,19,0,29,23,19,17,13,1,7,0,19,13,7,1,29,0,17,13,11,7,1,19,0,29,19,17,13,11,7,1,23,0,29,17,11,7,1,19,23,0,23,19,13,11,7,1,17,0,23,17,13,11,19,29,0,19,17,7,1,13,0,23,17,13,11,1,0,29,13,1,7,11,17,19,0,19,13,7,11,29,0,29,7,1,13,17,19,23,0,29,23,13,11,1,0,19,17,13,11,1,29,0,29,23,19,17,7,1,0,17,13,7,1,19,23,0,29,13,11,7,1,17,0,29,7,1,11,17,0,29,23,19,17,11,7,1,0,23,19,13,1,7,17,0,17,1,11,19,23,29,0,29,23,1,11,13,0,23,19,7,17,0,29,23,17,13,11,7,1,19,0,29,19,11,7,17,0,29,23,19,17,1,13,0,29,23,19,1,7,17,0,23,13,1,17,29,0,29,1,11,19,23,0,23,19,11,1,7,29,0,11,1,17,0,17,13,11,1,7,23,29,0,23,19,11,13,17,0,29,1,7,13,19,23,0,29,17,13,1,11,0,29,13,7,0,23,19,17,13,11,0,29,23,13,11,7,1,17,19,0,29,19,17,7,13,23,0,29,23,17,1,11,13,0,29,23,19,11,1,7,13,0,19,13,11,1,17,23,0,19,17,7,11,13,23,0,23,19,11,7,17,29,0,29,17,13,7,0,19,17,13,7,1,29,0,29,23,7,1,11,13,19,0,29,13,11,7,1,17,19,0,23,1,11,17,19,29,0,29,19,17,7,1,11,13,23,0,23,7,17,19,29,0,23,17,7,11,29,0,19,17,1,7,11,23,0,19,17,7,13,23,0,13,11,1,7,23,0,29,23,17,1,19,0,29,23,17,7,1,11,0,19,17,11,7,0,17,13,11,7,1,0,29,1,11,17,0,17,11,1,13,23,0,29,23,13,11,7,19,0,29,19,17,1,11,0,23,19,13,1,7 };
 #else
+
+// assumes starting at A=120 and covering the whole range; needs a special case first giant step.
+// it is like a special-case w=120, U=1, L=1 PAIR
+// 13 giant steps (13 adds + 13 muls) and 186 accums = 463 muls
+//static const int special_70 = 1;
+//static const int numb1_70 = 199;
+//static uint8_t b1_70[199] = {49, 47, 41, 37, 31, 23, 19, 17, 13, 11, 7, 29, 43, 0, 59, 49, 47, 43, 41, 29, 17, 13, 11, 7, 1, 23, 31, 37, 53, 0, 53, 49, 47, 43, 29, 23, 13, 11, 7, 1, 19, 37, 41, 59, 0, 59, 49, 47, 41, 37, 31, 23, 19, 17, 13, 1, 7, 11, 29, 43, 0, 59, 53, 43, 37, 31, 29, 23, 13, 7, 1, 17, 19, 41, 47, 0, 59, 47, 43, 37, 29, 19, 11, 1, 7, 13, 23, 31, 41, 49, 53, 0, 53, 43, 31, 29, 19, 17, 13, 11, 1, 23, 37, 41, 47, 0, 53, 49, 41, 31, 23, 19, 13, 7, 11, 17, 37, 59, 0, 59, 49, 47, 41, 31, 29, 19, 17, 11, 7, 13, 23, 37, 43, 0, 49, 47, 37, 29, 19, 13, 7, 1, 17, 23, 31, 59, 0, 43, 41, 37, 31, 29, 23, 19, 17, 13, 1, 7, 47, 53, 0, 59, 41, 31, 17, 13, 11, 7, 1, 19, 43, 47, 49, 53, 0, 49, 37, 29, 17, 11, 7, 1, 19, 23, 41, 47, 53, 59, 0, 59, 53, 43, 23, 17, 13, 11, 19, 29, 41};
+
+// assumes starting at A=150 and missing the primes between 70 and 90
+// it is like a special-case w=120, U=1, L=1 PAIR
+// 14 giant steps (14 adds + 14 muls) and 172 accums = 442 muls
+static const int special_70 = 0;
 static const int numb1_70 = 186;
 static uint8_t b1_70[186] = { 53,49,47,43,41,37,23,19,13,11,1,7,17,29,31,0,59,47,43,41,37,31,29,19,13,7,1,11,23,0,59,53,43,41,37,31,23,17,11,7,1,19,29,49,0,53,49,47,43,31,23,19,11,7,1,13,37,59,0,59,53,43,37,31,29,23,17,13,11,1,47,0,59,49,41,31,23,17,11,7,1,19,37,47,0,59,49,47,43,41,31,17,13,11,7,37,0,53,49,43,37,23,19,13,7,1,29,31,41,59,0,59,49,47,41,23,19,17,13,7,1,43,53,0,59,49,43,37,29,17,13,7,1,19,47,53,0,59,53,49,47,43,31,29,23,11,17,0,47,43,41,37,31,23,19,17,11,1,13,29,53,0,59,47,41,37,31,23,19,11,7,17,29,0,53,47,43,41,17,13,11,1,23,31,37,49 };
+
+// with map[] already included... didn't really help speed at all.
+//static const int special_70 = 0;
+//static const int numb1_70 = 186;
+//static uint8_t b1_70[186] = {16, 15, 14, 13, 12, 11, 8, 7, 5, 4, 1, 3, 6, 9, 10, 0, 17, 14, 13, 12, 11, 10, 9, 7, 5, 3, 1, 4, 8, 0, 17, 16, 13, 12, 11, 10, 8, 6, 4, 3, 1, 7, 9, 15, 0, 16, 15, 14, 13, 10, 8, 7, 4, 3, 1, 5, 11, 17, 0, 17, 16, 13, 11, 10, 9, 8, 6, 5, 4, 1, 14, 0, 17, 15, 12, 10, 8, 6, 4, 3, 1, 7, 11, 14, 0, 17, 15, 14, 13, 12, 10, 6, 5, 4, 3, 11, 0, 16, 15, 13, 11, 8, 7, 5, 3, 1, 9, 10, 12, 17, 0, 17, 15, 14, 12, 8, 7, 6, 5, 3, 1, 13, 16, 0, 17, 15, 13, 11, 9, 6, 5, 3, 1, 7, 14, 16, 0, 17, 16, 15, 14, 13, 10, 9, 8, 4, 6, 0, 14, 13, 12, 11, 10, 8, 7, 6, 4, 1, 5, 9, 16, 0, 17, 14, 12, 11, 10, 8, 7, 4, 3, 6, 9, 0, 16, 14, 13, 12, 6, 5, 4, 1, 8, 10, 11, 15};
 
 static const int numb1_85 = 225;
 static uint8_t b1_85[225] = { 1,53,49,47,43,41,37,23,19,13,11,1,7,17,29,31,0,59,47,43,41,37,31,29,19,13,7,1,11,23,0,59,53,43,41,37,31,23,17,11,7,1,19,29,49,0,53,49,47,43,31,23,19,11,7,1,13,37,59,0,59,53,43,37,31,29,23,17,13,11,1,47,0,59,49,41,31,23,17,11,7,1,19,37,47,0,59,49,47,43,41,31,17,13,11,7,37,0,53,49,43,37,23,19,13,7,1,29,31,41,59,0,59,49,47,41,23,19,17,13,7,1,43,53,0,59,49,43,37,29,17,13,7,1,19,47,53,0,59,53,49,47,43,31,29,23,11,17,0,47,43,41,37,31,23,19,17,11,1,13,29,53,0,59,47,41,37,31,23,19,11,7,17,29,0,53,47,43,41,17,13,11,1,23,31,37,49,0,53,47,43,41,29,19,7,1,17,31,37,49,59,0,49,43,37,19,17,1,23,29,47,53,0,59,53,43,41,31,17,7,1,11,13,19,29 };
@@ -2182,6 +2292,12 @@ void uecm_stage2_D120(uecm_pt *P, uint64_t rho, uecm_work *work)
 	uint64_t acc = work->stg2acc;
 	uint8_t *barray;
 	uint32_t numb;
+    uint64_t Pbprod[19];
+    uint64_t Paprod;
+    uint64_t n = work->n;
+    uint64_t sum1;
+    uint64_t diff1;
+    uecm_pt Pad;
 
 	work->paired = 0;
 	work->numprimes = 0;
@@ -2194,130 +2310,145 @@ void uecm_stage2_D120(uecm_pt *P, uint64_t rho, uecm_work *work)
 	//compute [d]Q for 0 < d <= D
 	Pd = &Pb[map[60]];
 
-	// [1]Q
-	Pb[1].Z = P->Z;
-	Pb[1].X = P->X;
-	work->Pbprod[1] = mulredcx(Pb[1].X, Pb[1].Z, work->n, rho);
+    // Pb setup
+    {
+        // [1]Q
+        Pb[1].Z = P->Z;
+        Pb[1].X = P->X;
+        Pbprod[1] = mulredcx(Pb[1].X, Pb[1].Z, n, rho);
 
-	// [2]Q
-	Pb[2].Z = P->Z;
-	Pb[2].X = P->X;
-	work->diff1 = submod(P->X, P->Z, work->n);
-	work->sum1 = addmod(P->X, P->Z, work->n);
-	udup(rho, work, work->sum1, work->diff1, &Pb[2]);
-	work->Pbprod[2] = mulredcx(Pb[2].X, Pb[2].Z, work->n, rho);
+        // [2]Q
+        Pb[2].Z = P->Z;
+        Pb[2].X = P->X;
+        diff1 = submod(P->X, P->Z, n);
+        sum1 = addmod(P->X, P->Z, n);
+        udup(rho, work, sum1, diff1, &Pb[2]);
+        Pbprod[2] = mulredcx(Pb[2].X, Pb[2].Z, n, rho);
 
-	// Calculate all Pb: the following is specialized for D=60
-	// [2]Q + [1]Q([1]Q) = [3]Q
-	uadd(rho, work, &Pb[1], &Pb[2], &Pb[1], &Pb[3]);		// <-- temporary
+        // Calculate all Pb: the following is specialized for D=60
+        // [2]Q + [1]Q([1]Q) = [3]Q
+        uadd(rho, work, &Pb[1], &Pb[2], &Pb[1], &Pb[3]);		// <-- temporary
 
-	// 2*[3]Q = [6]Q
-	work->diff1 = submod(Pb[3].X, Pb[3].Z, work->n);
-	work->sum1 = addmod(Pb[3].X, Pb[3].Z, work->n);
-	udup(rho, work, work->sum1, work->diff1, &work->pt3);	// pt3 = [6]Q
+        // 2*[3]Q = [6]Q
+        diff1 = submod(Pb[3].X, Pb[3].Z, n);
+        sum1 = addmod(Pb[3].X, Pb[3].Z, n);
+        udup(rho, work, sum1, diff1, &work->pt3);	// pt3 = [6]Q
 
-	// [3]Q + [2]Q([1]Q) = [5]Q
-	uadd(rho, work, &Pb[3], &Pb[2], &Pb[1], &work->pt1);	// <-- pt1 = [5]Q
-	Pb[3].X = work->pt1.X;
-	Pb[3].Z = work->pt1.Z;
+        // [3]Q + [2]Q([1]Q) = [5]Q
+        uadd(rho, work, &Pb[3], &Pb[2], &Pb[1], &work->pt1);	// <-- pt1 = [5]Q
+        Pb[3].X = work->pt1.X;
+        Pb[3].Z = work->pt1.Z;
 
-	// [6]Q + [5]Q([1]Q) = [11]Q
-	uadd(rho, work, &work->pt3, &work->pt1, &Pb[1], &Pb[4]);	// <-- [11]Q
+        // [6]Q + [5]Q([1]Q) = [11]Q
+        uadd(rho, work, &work->pt3, &work->pt1, &Pb[1], &Pb[4]);	// <-- [11]Q
 
-	i = 3;
-	k = 4;
-	j = 5;
-	while ((j + 12) < (60))
-	{
-		// [j+6]Q + [6]Q([j]Q) = [j+12]Q
-		uadd(rho, work, &work->pt3, &Pb[k], &Pb[i], &Pb[map[j + 12]]);
-		i = k;
-		k = map[j + 12];
-		j += 6;
-	}
+        i = 3;
+        k = 4;
+        j = 5;
+        while ((j + 12) < (60))
+        {
+            // [j+6]Q + [6]Q([j]Q) = [j+12]Q
+            uadd(rho, work, &work->pt3, &Pb[k], &Pb[i], &Pb[map[j + 12]]);
+            i = k;
+            k = map[j + 12];
+            j += 6;
+        }
 
-	// [6]Q + [1]Q([5]Q) = [7]Q
-	uadd(rho, work, &work->pt3, &Pb[1], &work->pt1, &Pb[3]);	// <-- [7]Q
-	i = 1;
-	k = 3;
-	j = 1;
-	while ((j + 12) < (60))
-	{
-		// [j+6]Q + [6]Q([j]Q) = [j+12]Q
-		uadd(rho, work, &work->pt3, &Pb[k], &Pb[i], &Pb[map[j + 12]]);
-		i = k;
-		k = map[j + 12];
-		j += 6;
-	}
+        // [6]Q + [1]Q([5]Q) = [7]Q
+        uadd(rho, work, &work->pt3, &Pb[1], &work->pt1, &Pb[3]);	// <-- [7]Q
+        i = 1;
+        k = 3;
+        j = 1;
+        while ((j + 12) < (60))
+        {
+            // [j+6]Q + [6]Q([j]Q) = [j+12]Q
+            uadd(rho, work, &work->pt3, &Pb[k], &Pb[i], &Pb[map[j + 12]]);
+            i = k;
+            k = map[j + 12];
+            j += 6;
+        }
 
-	// Pd = [2w]Q
-	// [31]Q + [29]Q([2]Q) = [60]Q
-	uadd(rho, work, &Pb[9], &Pb[10], &Pb[2], Pd);	// <-- [60]Q
-	work->ptadds++;
+        // Pd = [2w]Q
+        // [31]Q + [29]Q([2]Q) = [60]Q
+        uadd(rho, work, &Pb[9], &Pb[10], &Pb[2], Pd);	// <-- [60]Q
+        work->ptadds++;
 
-	// make all of the Pbprod's
-	for (i = 3; i < 19; i++)
-	{
-		work->Pbprod[i] = mulredcx(Pb[i].X, Pb[i].Z, work->n, rho);
-	}
+        // make all of the Pbprod's
+        for (i = 3; i < 19; i++)
+        {
+            Pbprod[i] = mulredcx(Pb[i].X, Pb[i].Z, n, rho);
+        }
+    }
 
-	//initialize info needed for giant step
-	// temporary - make [4]Q
-	work->diff1 = submod(Pb[2].X, Pb[2].Z, work->n);
-	work->sum1 = addmod(Pb[2].X, Pb[2].Z, work->n);
-	udup(rho, work, work->sum1, work->diff1, &work->pt3);	// pt3 = [4]Q
+    // Pa setup
+    {
+        //initialize info needed for giant step
+        // temporary - make [4]Q
+        diff1 = submod(Pb[2].X, Pb[2].Z, n);
+        sum1 = addmod(Pb[2].X, Pb[2].Z, n);
+        udup(rho, work, sum1, diff1, &work->pt3);	// pt3 = [4]Q
 
-	// Pd = [w]Q
-	// [17]Q + [13]Q([4]Q) = [30]Q
-	uadd(rho, work, &Pb[map[17]], &Pb[map[13]], &work->pt3, &work->Pad);	// <-- [30]Q
+        // Pd = [w]Q
+        // [17]Q + [13]Q([4]Q) = [30]Q
+        uadd(rho, work, &Pb[map[17]], &Pb[map[13]], &work->pt3, &Pad);	// <-- [30]Q
 
-	// [60]Q + [30]Q([30]Q) = [90]Q
-	uadd(rho, work, Pd, &work->Pad, &work->Pad, Pa);
-	work->pt1.X = Pa->X;
-	work->pt1.Z = Pa->Z;
+        // [60]Q + [30]Q([30]Q) = [90]Q
+        uadd(rho, work, Pd, &Pad, &Pad, Pa);
+        work->pt1.X = Pa->X;
+        work->pt1.Z = Pa->Z;
+
+        // [90]Q + [30]Q([60]Q) = [120]Q
+        uadd(rho, work, Pa, &Pad, Pd, Pa);
+
+        // adjustment of Pa and Pad for larger B1.
+        // Currently we have Pa=120, Pd=60, Pad=30
+        if ((work->stg1_max > 70) || !special_70)
+        {
+            // Pd = [120]Q
+            Pd->X = Pa->X;
+            Pd->Z = Pa->Z;
+
+            // [120]Q + [30]Q([90]Q) = [150]Q
+            uadd(rho, work, Pa, &Pad, &work->pt1, Pa);
+
+            // now we have Pa=150, Pd=120, Pad=30 and are ready for strides of 120
+        }
+
+        if (work->stg1_max == 165)
+        {
+            // need Pa = 180, Pad = 60
+            // [150]Q + [30]Q([120]Q) = [180]Q
+            uadd(rho, work, Pa, &Pad, Pd, Pa);
+
+            diff1 = submod(Pad.X, Pad.Z, n);
+            sum1 = addmod(Pad.X, Pad.Z, n);
+            udup(rho, work, sum1, diff1, &Pad);	// Pad = [60]Q
+        }
+        else if (work->stg1_max == 205)
+        {
+            // need Pa = 210, Pad = 90.
+            // have pt1 = 90
+
+            diff1 = submod(Pad.X, Pad.Z, n);
+            sum1 = addmod(Pad.X, Pad.Z, n);
+            udup(rho, work, sum1, diff1, &Pad);	// Pad = [60]Q
+
+            // [150]Q + [60]Q([90]Q) = [210]Q
+            uadd(rho, work, Pa, &Pad, &work->pt1, Pa);
+            Pad.X = work->pt1.X;
+            Pad.Z = work->pt1.Z;
+        }
+
+        Paprod = mulredcx(Pa->X, Pa->Z, n, rho);
+    }
+
+	//initialize accumulator
+	acc = u64div(1, n);
 	
-	// [90]Q + [30]Q([60]Q) = [120]Q
-	uadd(rho, work, Pa, &work->Pad, Pd, Pa);
-	Pd->X = Pa->X;
-	Pd->Z = Pa->Z;
-
-	// [120]Q + [30]Q([90]Q) = [150]Q
-	uadd(rho, work, Pa, &work->Pad, &work->pt1, Pa);
-
-
-	// adjustment of Pa and Pad for larger B1.
-	// Currently we have Pa=150, Pd=120, Pad=30
-	if (work->stg1_max == 165)
-	{
-		// need Pa = 180, Pad = 60
-		// [150]Q + [30]Q([120]Q) = [180]Q
-		uadd(rho, work, Pa, &work->Pad, Pd, Pa);
-
-		work->diff1 = submod(work->Pad.X, work->Pad.Z, work->n);
-		work->sum1 = addmod(work->Pad.X, work->Pad.Z, work->n);
-		udup(rho, work, work->sum1, work->diff1, &work->Pad);	// Pad = [60]Q
-	}
-	else if (work->stg1_max == 205)
-	{
-		// need Pa = 210, Pad = 90.
-		// have pt1 = 90
-
-		work->diff1 = submod(work->Pad.X, work->Pad.Z, work->n);
-		work->sum1 = addmod(work->Pad.X, work->Pad.Z, work->n);
-		udup(rho, work, work->sum1, work->diff1, &work->Pad);	// Pad = [60]Q
-
-		// [150]Q + [60]Q([90]Q) = [210]Q
-		uadd(rho, work, Pa, &work->Pad, &work->pt1, Pa);
-		work->Pad.X = work->pt1.X;
-		work->Pad.Z = work->pt1.Z;
-	}
-
-	//initialize accumulator and Paprod
-	acc = u64div(1, work->n);
-	work->Paprod = mulredcx(Pa->X, Pa->Z, work->n, rho);
-
+    int first = 0;
 	if (work->stg1_max == 70)
 	{
+        first = special_70;
 		barray = b1_70;
 		numb = numb1_70;
 	}
@@ -2344,22 +2475,43 @@ void uecm_stage2_D120(uecm_pt *P, uint64_t rho, uecm_work *work)
 
 	for (i = 0; i < numb; i++)
 	{
+        uint64_t x, z, t1, t2, t3;
+
 		if (barray[i] == 0)
 		{
-			//giant step - use the addition formula for ECM
-			work->pt1.X = Pa->X;
-			work->pt1.Z = Pa->Z;
+            if (first)
+            {
+                // Currently we have Pa=120, Pd=60, Pad=30
+                // need to get Pd=120, Pa=240, and Pad = Pa - 120, then
+                // that condition will hold for the rest of stage 2.
+                // this is a special case for B1=70.
+                // to do that, we double Pa and set both
+                // Pad and Pd to the old Pa
+                x = Pa->X;
+                z = Pa->Z;
+                diff1 = submod(Pa->X, Pa->Z, n);
+                sum1 = addmod(Pa->X, Pa->Z, n);
+                udup(rho, work, sum1, diff1, Pa);	
+                Pad.X = Pd->X = x;
+                Pad.Z = Pd->Z = z;
+                first = 0;
+            }
+            else
+            {
+                //giant step - use the addition formula for ECM
+                x = Pa->X;
+                z = Pa->Z;
 
-			//Pa + Pd
-			uadd(rho, work, Pa, Pd, &work->Pad, Pa);
+                //Pa + Pd
+                uadd(rho, work, Pa, Pd, &Pad, Pa);
 
-			//Pad holds the previous Pa
-			work->Pad.X = work->pt1.X;
-			work->Pad.Z = work->pt1.Z;
+                //Pad holds the previous Pa
+                Pad.X = x;
+                Pad.Z = z;
 
-			//and Paprod
-			work->Paprod = mulredcx(Pa->X, Pa->Z, work->n, rho);
-
+                //and Paprod
+                Paprod = mulredcx(Pa->X, Pa->Z, n, rho);
+            }
 			i++;
 		}
 
@@ -2369,12 +2521,12 @@ void uecm_stage2_D120(uecm_pt *P, uint64_t rho, uecm_work *work)
 		b = barray[i];
 		// accumulate the cross product  (zimmerman syntax).
 		// page 342 in C&P
-		work->tt1 = submod(Pa->X, Pb[map[b]].X, work->n);
-		work->tt2 = addmod(Pa->Z, Pb[map[b]].Z, work->n);
-		work->tt3 = mulredcx(work->tt1, work->tt2, work->n, rho);
-		work->tt1 = addmod(work->tt3, work->Pbprod[map[b]], work->n);
-		work->tt2 = submod(work->tt1, work->Paprod, work->n);
-		acc = mulredcx(acc, work->tt2, work->n, rho);
+		t1 = submod(Pa->X, Pb[map[b]].X, n);
+		t2 = addmod(Pa->Z, Pb[map[b]].Z, n);
+		t3 = mulredcx(t1, t2, n, rho);
+		t1 = addmod(t3, Pbprod[map[b]], n);
+		t2 = submod(t1, Paprod, n);
+		acc = mulredcx(acc, t2, n, rho);
 
 	}
 
@@ -2740,6 +2892,23 @@ uint64_t gcd64(uint64_t x, uint64_t y)
     return a;
 }
 
+static int pairmap_sz47_w30_u2_x25 = 116;
+static uint8_t pairmap_v47_w30_u2_x25[116] =
+{ 1, 1, 1, 2, 2, 2, 3, 3, 3, 5, 4, 5, 5, 5, 7, 7, 6, 3, 0, 6, 5, 3, 6, 3, 6, 7, 3, 7, 8, 9, 8, 9, 0, 8, 7, 8, 8, 10, 10, 7, 10, 0, 10, 7, 10, 10, 10, 7, 11, 11, 13, 13, 12, 7, 9, 0, 11, 12, 11, 13, 13, 13, 12, 15, 11, 0, 14, 14, 14, 16, 15, 16, 13, 13, 0, 16, 16, 16, 13, 16, 16, 13, 16, 13, 18, 19, 15, 0, 18, 18, 19, 18, 15, 18, 19, 19, 20, 20, 21, 0, 20, 20, 21, 21, 21, 23, 19, 0, 22, 21, 21, 19, 21, 21, 23, 21 };
+static uint8_t pairmap_u47_w30_u2_x25[116] =
+{ 1, 7, 13, 7, 11, 19, 7, 17, 31, 1, 43, 17, 31, 49, 1, 17, 53, 19, 0, 1, 41, 7, 37, 13, 43, 17, 11, 49, 37, 13, 53, 29, 0, 11, 49, 31, 53, 11, 17, 7, 53, 0, 11, 1, 31, 47, 53, 29, 31, 53, 1, 13, 47, 11, 11, 0, 31, 11, 53, 1, 13, 17, 53, 19, 7, 0, 7, 23, 59, 13, 47, 49, 11, 1, 0, 7, 13, 17, 11, 41, 49, 29, 59, 7, 23, 23, 1, 0, 19, 23, 1, 43, 19, 49, 29, 43, 19, 53, 29, 0, 13, 19, 23, 47, 53, 29, 19, 0, 7, 49, 1, 13, 13, 17, 29, 19 };
+
+static int pairmap_sz59_w30_u2_x25 = 136;
+static uint8_t pairmap_v59_w30_u2_x25[136] =
+{ 1, 2, 2, 2, 2, 2, 3, 3, 4, 5, 5, 5, 5, 5, 7, 7, 6, 3, 0, 6, 5, 6, 6, 7, 3, 7, 8, 9, 8, 9, 0, 8, 7, 8, 8, 10, 10, 7, 10, 0, 10, 7, 10, 10, 10, 7, 11, 11, 13, 13, 12, 7, 9, 0, 11, 12, 11, 13, 13, 13, 12, 15, 11, 0, 14, 14, 14, 16, 15, 16, 13, 13, 0, 16, 16, 16, 13, 16, 16, 13, 16, 13, 18, 19, 15, 0, 18, 18, 19, 18, 15, 18, 19, 19, 20, 20, 21, 0, 20, 20, 21, 21, 21, 23, 19, 0, 22, 21, 22, 22, 23, 24, 23, 19, 23, 25, 0, 24, 24, 24, 21, 26, 27, 27, 26, 26, 0, 27, 27, 25, 27, 25, 27, 27, 27, 27 };
+static uint8_t pairmap_u59_w30_u2_x25[136] =
+{ 1, 7, 11, 17, 19, 23, 17, 31, 23, 1, 13, 17, 31, 49, 1, 17, 53, 19, 0, 1, 41, 37, 43, 17, 11, 49, 37, 13, 53, 29, 0, 11, 49, 31, 53, 11, 17, 7, 53, 0, 11, 1, 31, 47, 53, 29, 31, 53, 1, 13, 47, 11, 11, 0, 31, 11, 53, 1, 13, 17, 53, 19, 7, 0, 7, 23, 59, 13, 47, 49, 11, 1, 0, 7, 13, 17, 11, 41, 49, 29, 59, 7, 23, 23, 1, 0, 19, 23, 1, 43, 19, 49, 29, 43, 19, 53, 29, 0, 13, 19, 23, 47, 53, 29, 19, 0, 7, 49, 29, 49, 29, 7, 43, 13, 47, 1, 0, 23, 49, 59, 17, 29, 7, 11, 43, 49, 0, 29, 19, 17, 17, 13, 13, 11, 7, 1 };
+
+// U=2 means more pairs and fewer accumulates, but w=30 means more adds.
+// the whole sequence is laid out so we can count the total multiplies.
+// each 0 in the u-array is 4 adds and 4 muls = 28 muls
+// 13 0's = 364 muls.  (157 - 13) * 2 = 288 muls (total 652).  
+// so the giant steps are  more expensive than the accumulates.
 static int pairmap_sz70_w30_u2_x25 = 157;
 static uint8_t pairmap_v70_w30_u2_x25[157] =
 { 2, 2, 2, 2, 3, 3, 3, 5, 5, 5, 5, 5, 7, 7, 6, 3, 0, 6, 5, 3, 6, 6, 7, 3, 7, 8, 9, 8, 9, 0, 8, 7, 8, 8, 10, 10, 7, 10, 0, 10, 7, 10, 10, 10, 7, 11, 11, 13, 13, 12, 7, 9, 0, 11, 12, 11, 13, 13, 13, 12, 15, 11, 0, 14, 14, 14, 16, 15, 16, 13, 13, 0, 16, 16, 16, 13, 16, 16, 13, 16, 13, 18, 19, 15, 0, 18, 18, 19, 18, 15, 18, 19, 19, 20, 20, 21, 0, 20, 20, 21, 21, 21, 23, 19, 0, 22, 21, 22, 22, 23, 24, 23, 19, 23, 25, 0, 24, 24, 24, 21, 26, 27, 27, 26, 26, 0, 27, 28, 29, 28, 25, 25, 0, 27, 25, 28, 28, 25, 28, 29, 25, 30, 31, 30, 25, 27, 0, 27, 27, 31, 31, 29, 31, 31, 29, 27, 29 };
@@ -2752,6 +2921,8 @@ static uint8_t pairmap_v70_w30_u2_x50[298] =
 static uint8_t pairmap_u70_w30_u2_x50[298] =
 {7, 11, 17, 19, 7, 17, 31, 1, 13, 17, 31, 49, 1, 17, 53, 19, 0, 1, 41, 7, 37, 43, 17, 11, 49, 37, 13, 53, 29, 0, 11, 49, 31, 53, 11, 17, 7, 53, 0, 11, 1, 31, 47, 53, 29, 31, 53, 1, 13, 47, 11, 11, 0, 31, 11, 53, 1, 13, 17, 53, 19, 7, 0, 7, 23, 59, 13, 47, 49, 11, 1, 0, 7, 13, 17, 11, 41, 49, 29, 59, 7, 23, 23, 1, 0, 19, 23, 1, 43, 19, 49, 29, 43, 19, 53, 29, 0, 13, 19, 23, 47, 53, 29, 19, 0, 7, 49, 29, 49, 29, 7, 43, 13, 47, 1, 0, 23, 49, 59, 17, 29, 7, 11, 43, 49, 0, 11, 37, 11, 49, 17, 13, 0, 37, 1, 31, 37, 17, 47, 37, 13, 43, 17, 49, 29, 29, 0, 1, 7, 7, 43, 19, 11, 11, 11, 23, 29, 0, 43, 17, 47, 29, 11, 23, 43, 1, 1, 0, 1, 59, 7, 43, 7, 11, 49, 13, 29, 0, 41, 43, 11, 13, 1, 37, 1, 31, 19, 0, 47, 7, 37, 43, 47, 29, 0, 59, 37, 41, 23, 19, 13, 59, 11, 23, 13, 0, 59, 7, 37, 13, 43, 19, 49, 53, 29, 29, 0, 1, 29, 7, 19, 53, 11, 17, 0, 31, 13, 47, 49, 7, 1, 11, 19, 7, 23, 0, 1, 13, 23, 23, 23, 29, 13, 1, 0, 47, 23, 1, 1, 1, 31, 19, 19, 7, 17, 17, 0, 7, 11, 19, 31, 1, 13, 17, 0, 13, 41, 23, 7, 19, 41, 43, 19, 7, 29, 0, 31, 59, 1, 43, 17, 29, 11, 7, 0, 1, 17, 53, 23, 19, 17, 49, 19, 1, 11, 29, 23, 17};
 
+// now each giant step is 2 adds and 2 muls, again we have 13 giant steps.
+// 13 * (12 + 2) + (178 - 13) * 2 = 512 muls
 static int pairmap_sz70_w60_u1_x25 = 178;
 static uint8_t pairmap_v70_w60_u1_x25[178] =
 {1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 1, 1, 3, 1, 1, 1, 0, 3, 3, 3, 3, 2, 4, 2, 4, 2, 4, 2, 2, 2, 0, 4, 4, 4, 4, 4, 3, 3, 3, 3, 0, 5, 5, 5, 5, 4, 6, 4, 6, 4, 4, 6, 4, 6, 6, 4, 4, 4, 4, 0, 6, 6, 6, 5, 7, 5, 5, 5, 0, 7, 7, 7, 7, 8, 8, 6, 6, 6, 6, 6, 6, 6, 6, 0, 8, 8, 8, 8, 9, 7, 9, 9, 9, 7, 7, 7, 7, 0, 9, 9, 9, 10, 10, 8, 8, 0, 10, 10, 10, 11, 9, 11, 9, 9, 9, 9, 9, 9, 9, 0, 11, 11, 11, 11, 11, 11, 12, 10, 10, 10, 0, 12, 12, 13, 13, 11, 13, 13, 11, 13, 11, 11, 11, 0, 13, 13, 14, 14, 12, 12, 12, 12, 12, 0, 14, 14, 14, 15, 13, 15, 13, 15, 13, 13, 13, 13, 13, 13, 0, 15, 14, 14, 14, 16, 14};
@@ -2786,13 +2957,13 @@ void uecm_stage2_w30u2(uecm_pt* P, uint64_t rho, uecm_work* work)
 {
     int a, b;
     int i, j, k, m;
-    uint32_t w = 60;
-    uint32_t U = 1;
-    uint32_t L = 2;
-    uecm_pt Pa[4];
+    uint32_t w = 30;
+    uint32_t U = 2;
+    uint32_t L = 4;
+    uecm_pt Pa[8];
     uecm_pt* Pb = work->Pb;
     uecm_pt* Pd = &work->Pd;
-    uint64_t Paprod[4];
+    uint64_t Paprod[8];
     uint64_t acc = work->stg2acc;
     uint64_t amin = (work->stg1_max + w) / (2 * w);
     uint8_t* pairmap_u;
@@ -2876,61 +3047,22 @@ void uecm_stage2_w30u2(uecm_pt* P, uint64_t rho, uecm_work* work)
         }
     }
 
-    if (w == 30)
-    {
-        // [31]Q + [29]Q([2]Q) = [60]Q
-        A = 60;
-        uadd(rho, work, &Pb[9], &Pb[10], &Pb[2], &Pa[0]);	// <-- [60]Q
+    // [31]Q + [29]Q([2]Q) = [60]Q
+    A = 60;
+    uadd(rho, work, &Pb[9], &Pb[10], &Pb[2], &Pa[0]);	// <-- [60]Q
 
-        work->ptadds++;
-        //initialize info needed for giant step
-        // temporary - make [4]Q
-        work->diff1 = submod(Pb[2].X, Pb[2].Z, work->n);
-        work->sum1 = addmod(Pb[2].X, Pb[2].Z, work->n);
-        udup(rho, work, work->sum1, work->diff1, &work->pt3);	// pt3 = [4]Q
+    work->ptadds++;
+    //initialize info needed for giant step
+    // temporary - make [4]Q
+    work->diff1 = submod(Pb[2].X, Pb[2].Z, work->n);
+    work->sum1 = addmod(Pb[2].X, Pb[2].Z, work->n);
+    udup(rho, work, work->sum1, work->diff1, &work->pt3);	// pt3 = [4]Q
 
-        // Pd = Pad = [w]Q
-        // [17]Q + [13]Q([4]Q) = [30]Q
-        uadd(rho, work, &Pb[map[17]], &Pb[map[13]], &work->pt3, &work->Pad);	// <-- [30]Q
-        Pd->X = work->Pad.X;
-        Pd->Z = work->Pad.Z;
-    }
-    else
-    {
-        // [31]Q + [29]Q([2]Q) = [60]Q
-        A = 60;
-        uadd(rho, work, &Pb[9], &Pb[10], &Pb[2], &Pa[0]);	// <-- [60]Q
-        // save [60]Q
-        Pa[1].X = Pa[0].X;  
-        Pa[1].Z = Pa[0].Z;
-
-        // temporary - make [4]Q
-        work->diff1 = submod(Pb[2].X, Pb[2].Z, work->n);
-        work->sum1 = addmod(Pb[2].X, Pb[2].Z, work->n);
-        udup(rho, work, work->sum1, work->diff1, &work->pt3);	// pt3 = [4]Q
-
-        // Pd = Pad = [w]Q
-        // [17]Q + [13]Q([4]Q) = [30]Q
-        uadd(rho, work, &Pb[map[17]], &Pb[map[13]], &work->pt3, &work->Pad);	// <-- [30]Q
-        Pd->X = work->Pad.X;
-        Pd->Z = work->Pad.Z;
-
-        work->pt1.X = Pa[0].X;
-        work->pt1.Z = Pa[0].Z;
-        uadd(rho, work, &work->pt1, Pd, &work->Pad, &Pa[0]);	// Pa = 30 + Pa
-        work->Pad.X = work->pt1.X;
-        work->Pad.Z = work->pt1.Z;
-
-        work->pt1.X = Pa[0].X;
-        work->pt1.Z = Pa[0].Z;
-        uadd(rho, work, &work->pt1, Pd, &work->Pad, &Pa[0]);	// Pa = 30 + Pa
-        work->Pad.X = work->pt1.X;
-        work->Pad.Z = work->pt1.Z;
-
-        A = 120;
-        Pd->X = work->Pad.X = Pa[1].X;
-        Pd->Z = work->Pad.Z = Pa[1].Z;
-    }
+    // Pd = Pad = [w]Q
+    // [17]Q + [13]Q([4]Q) = [30]Q
+    uadd(rho, work, &Pb[map[17]], &Pb[map[13]], &work->pt3, &work->Pad);	// <-- [30]Q
+    Pd->X = work->Pad.X;
+    Pd->Z = work->Pad.Z;
 
     while (A < 2 * amin * w)
     {
@@ -2964,21 +3096,24 @@ void uecm_stage2_w30u2(uecm_pt* P, uint64_t rho, uecm_work* work)
     //initialize accumulator and Paprod
     acc = u64div(1, work->n);
 
-    if (work->stg1_max == 70)
+    if (work->stg1_max == 47)
     {
-        //pairmap_u = pairmap_u70_w30_u2_x25;
-        //pairmap_v = pairmap_v70_w30_u2_x25;
-        //numb = pairmap_sz70_w30_u2_x25;
-
-        pairmap_u = pairmap_u70_w60_u1_x25;
-        pairmap_v = pairmap_v70_w60_u1_x25;
-        numb = pairmap_sz70_w60_u1_x25;
+        pairmap_u = pairmap_u47_w30_u2_x25;
+        pairmap_v = pairmap_v47_w30_u2_x25;
+        numb = pairmap_sz47_w30_u2_x25;
+    }
+    else if (work->stg1_max == 59)
+    {
+        pairmap_u = pairmap_u59_w30_u2_x25;
+        pairmap_v = pairmap_v59_w30_u2_x25;
+        numb = pairmap_sz59_w30_u2_x25;
     }
     else
     {
-        exit(1);
+        pairmap_u = pairmap_u70_w30_u2_x25;
+        pairmap_v = pairmap_v70_w30_u2_x25;
+        numb = pairmap_sz70_w30_u2_x25;
     }
-
 
     for (i = 0; i < numb; i++)
     {
@@ -3849,7 +3984,7 @@ int main(int argc, char **argv)
 	char filenames[15][80];
     uint64_t inputs[100000];
     uint64_t knowns1[100000], knowns2[100000];
-    int generate_test_files = 1;
+    int generate_test_files = 0;
 
     gettimeofday(&gstart, NULL);
     srand(42);
@@ -3890,7 +4025,33 @@ int main(int argc, char **argv)
         strcpy(filenames[i++], "semiprimes_64bit.dat"); // 11 
         num_files = i;
     }
-    
+    // testing small semiprime inputs
+    else if (0)
+    {
+        strcpy(filenames[i++], "testdata_24bit");   // 0
+        strcpy(filenames[i++], "testdata_26bit");   // 1
+        strcpy(filenames[i++], "testdata_28bit");   // 2
+        strcpy(filenames[i++], "testdata_30bit");   // 3 
+        strcpy(filenames[i++], "testdata_32bit");   // 4 
+        num_files = i;
+    }
+    // testing larger random inputs
+    else if (0)
+    {
+        strcpy(filenames[i++], "testdata_42bit");   // 0 
+        strcpy(filenames[i++], "testdata_44bit");   // 1 
+        strcpy(filenames[i++], "testdata_46bit");   // 2 
+        strcpy(filenames[i++], "testdata_48bit");   // 3 
+        strcpy(filenames[i++], "testdata_50bit");   // 4 
+        strcpy(filenames[i++], "testdata_52bit");   // 5 
+        strcpy(filenames[i++], "testdata_54bit");   // 6
+        strcpy(filenames[i++], "testdata_56bit");   // 7
+        strcpy(filenames[i++], "testdata_58bit");   // 8
+        strcpy(filenames[i++], "testdata_60bit");   // 9
+        strcpy(filenames[i++], "testdata_62bit");   // 10
+        strcpy(filenames[i++], "testdata_64bit");   // 11
+        num_files = i;
+    }
 
 	
 	// tinyecm test
@@ -3954,21 +4115,49 @@ int main(int argc, char **argv)
                 B1 = 41;
                 curves = 16;
             }
-            else if (bitsize <= 50)
+#if 0
+            else if (bitsize <= 44)
+            {
+                B1 = 47;
+                curves = 16;
+            }
+            else if (bitsize <= 48)
+            {
+                B1 = 59;
+                curves = 16;
+            }
+            else if (bitsize <= 52)
+            {
+                B1 = 70;
+                curves = 16;
+            }
+            else if (bitsize <= 56)
+            {
+                B1 = 125;
+                curves = 20;
+            }
+            else if (bitsize <= 58)
+            {
+                B1 = 165;
+                curves = 16;
+            }
+#else
+            else if (bitsize <= 52)
             {
                 B1 = 70;
                 curves = 24;
             }
-            else if (bitsize <= 52)
+            else if (bitsize <= 54)
             {
                 B1 = 85;
                 curves = 24;
             }
-            else if (bitsize <= 55)
+            else if (bitsize <= 58)
             {
                 B1 = 125;
-                curves = 24;
+                curves = 32;
             }
+#endif
             else if (bitsize <= 60)
             {
                 B1 = 165;
@@ -4092,7 +4281,7 @@ int main(int argc, char **argv)
                         if (B1 > 160)
                             avg_curves += tinyecm(in64, &outf, B1, 35 * B1, curves);
                         else if (B1 < 70)
-                            avg_curves += tinyecm(in64, &outf, B1, 0, curves);
+                            avg_curves += tinyecm(in64, &outf, B1, 25 * B1, curves);
                         else
                             avg_curves += tinyecm(in64, &outf, B1, 25 * B1, curves);
 
